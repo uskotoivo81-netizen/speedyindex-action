@@ -1,0 +1,68 @@
+name: SpeedyIndex index check
+description: Check whether your sitemap URLs are indexed in Google, Bing or Yandex (or submit them for indexing) with SpeedyIndex.
+author: SpeedyIndex
+branding:
+  icon: search
+  color: green
+
+inputs:
+  api-key:
+    description: SpeedyIndex API key. Store it as a repository secret.
+    required: true
+  sitemap:
+    description: Sitemap or sitemap index URL to read URLs from.
+    required: false
+  urls-file:
+    description: Path to a file with one URL per line (used instead of, or together with, sitemap).
+    required: false
+  engine:
+    description: google, bing or yandex
+    required: false
+    default: google
+  mode:
+    description: "check (index check) or index (submit for indexing: spends balance; google or yandex)"
+    required: false
+    default: check
+  max-urls:
+    description: Use at most this many URLs (newest lastmod first when the sitemap has it).
+    required: false
+    default: "1000"
+  wait-minutes:
+    description: For mode=check, wait up to this many minutes for the report (0 = do not wait).
+    required: false
+    default: "20"
+  fail-on-unindexed:
+    description: Fail the job if the report has unindexed URLs (mode=check with a report).
+    required: false
+    default: "false"
+
+outputs:
+  task-id:
+    description: SpeedyIndex task id
+    value: ${{ steps.run.outputs.task-id }}
+  total:
+    description: Number of URLs sent
+    value: ${{ steps.run.outputs.total }}
+  unindexed:
+    description: Number of unindexed URLs (empty if the report was not ready)
+    value: ${{ steps.run.outputs.unindexed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install speedyindex
+      shell: bash
+      run: python3 -m pip install --quiet --disable-pip-version-check "speedyindex>=0.2.0"
+    - name: Run SpeedyIndex
+      id: run
+      shell: bash
+      env:
+        SPEEDYINDEX_API_KEY: ${{ inputs.api-key }}
+        SI_SITEMAP: ${{ inputs.sitemap }}
+        SI_URLS_FILE: ${{ inputs.urls-file }}
+        SI_ENGINE: ${{ inputs.engine }}
+        SI_MODE: ${{ inputs.mode }}
+        SI_MAX: ${{ inputs.max-urls }}
+        SI_WAIT: ${{ inputs.wait-minutes }}
+        SI_FAIL: ${{ inputs.fail-on-unindexed }}
+      run: python3 "${{ github.action_path }}/run.py"
